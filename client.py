@@ -13,6 +13,14 @@ records = [
     {u'station': u'012650-99999', u'temp': 111, u'time': 1433275478},
 ]*250
 
+records2 = [
+    {
+    "header": ["station", "temp", "time"],
+    "data": [[u'011990-99999', "0", "1433269388"]]*250
+    }
+]
+
+
 schema = {
     'doc': 'A weather reading.',
     'name': 'Weather',
@@ -24,33 +32,71 @@ schema = {
         {'name': 'temp', 'type': 'int'},
     ],
 }
+schema2 = {
+  "name": "MyClass",
+  "type": "array",
+  "namespace": "com.acme.avro",
+  "items": {
+    "name": "MyClass_record",
+    "type": "record",
+    "fields": [
+      {
+        "name": "header",
+        "type": {
+          "type": "array",
+          "items": "string"
+        }
+      },
+      {
+        "name": "data",
+        "type": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": "string"
+          }
+        }
+      }
+    ]
+  }
+}
+
 parsed_schema = parse_schema(schema)
+parsed_schema2 = parse_schema(schema2)
 
 # Writing
 with open('weather.avro', 'wb') as out:
     writer(out, parsed_schema, records)
 
+# with open('weather2.avro', 'wb') as out2:
+# writer(out2, parsed_schema2, records2)
+
+def request_orjson_shift():
+
+    content_type = 'text/orjson'
+
+    return('orJSON+split', __request_json(content_type, records2))
 
 def request_orjson():
 
     content_type = 'text/orjson'
 
-    return __request_json(content_type)
+    return('orJSON', __request_json(content_type, records))
 
 def request_json():
 
     content_type = 'text/json'
 
-    return __request_json(content_type)
+    return('JSON', __request_json(content_type, records))
 
-def __request_json(content_type):
+def __request_json(content_type, payload):
 
     response = requests.post(
         url, 
-        data=json.dumps(records),
+        data=json.dumps(payload),
         headers={'Content-Type': content_type}
         )
-    return(content_type, response.elapsed.total_seconds())
+    return response.elapsed.total_seconds()
 
 def request_avro():
 
@@ -64,20 +110,21 @@ def request_avro():
         data=payload,
         headers={'Content-Type': content_type}
         )
-    return(content_type, response.elapsed.total_seconds())
+    return('Avro', response.elapsed.total_seconds())
 
 
 if __name__ == '__main__':
 
     stats = {}
     
-    calls = [request_json, request_orjson, request_avro]
+    calls = [request_json, request_orjson, request_avro, request_orjson_shift]
 
-    for i in range(5):
+    for i in range(2):
         for c in calls:
             x = c()
             stats.setdefault(x[0], []).append(x[1])
     
-    print("Content-Type\tMean response\tSTDEV")
+    print("Method\t\t\tMean response\tSTDEV")
+    print('-'*50)
     for k, v in stats.items():
-        print(f"{k}\t{statistics.mean(v):.10f}\t{statistics.stdev(v):7f}")
+        print(f"{k:20s}\t{statistics.mean(v):.10f}\t{statistics.stdev(v):7f}")
