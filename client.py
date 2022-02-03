@@ -71,7 +71,7 @@ with open('weather.avro', 'wb') as out:
 # with open('weather2.avro', 'wb') as out2:
 # writer(out2, parsed_schema2, records2)
 
-def request_orjson_shift():
+def request_orjson_split():
 
     content_type = 'text/orjson'
 
@@ -82,6 +82,12 @@ def request_orjson():
     content_type = 'text/orjson'
 
     return('orJSON', __request_json(content_type, records))
+
+def request_json_split():
+
+    content_type = 'text/json'
+
+    return('JSON+split', __request_json(content_type, records2))
 
 def request_json():
 
@@ -117,7 +123,13 @@ if __name__ == '__main__':
 
     stats = {}
     
-    calls = [request_json, request_orjson, request_avro, request_orjson_shift]
+    calls = [
+        request_json, 
+        request_orjson, 
+        request_avro, 
+        request_json_split,
+        request_orjson_split,
+        ]
 
     for i in range(2):
         for c in calls:
